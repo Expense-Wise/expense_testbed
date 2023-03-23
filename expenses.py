@@ -14,40 +14,40 @@ app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///site.db"
 db = SQLAlchemy(app)
 
 class User(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.Integer, index=True, primary_key=True)
     username = db.Column(db.String(20), unique=True, nullable=False)
-    email = db.Column(db.String(120), unique=True, nullable=False)
-    image_file = db.Column(db.String(20), nullable=False, default="default.jpg")
-    password = db.Column(db.String(60), nullable=False)
-    posts = db.relationship("Post", backref="author", lazy=True) # query which can pull all posts by one author
+    email = db.Column(db.String(120), index=True, unique=True, nullable=False)
+    expenses = db.relationship("Expense", backref="user", lazy=True) # query which can pull all posts by one author
     
     def __repr__(self):
-        return f'User("{self.username}", "{self.email}", "{self.image_file}")'
+        return f'User("{self.username}", "{self.email}", "{self.id}")'
     
 
-class Post(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    title = db.Column(db.String(100), nullable=False)
-    date_posted = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
-    content = db.Column(db.Text, nullable=False)
-    user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
+class Expense(db.Model):
+    id = db.Column(db.Integer, index=True, primary_key=True)
+    amount = db.Column(db.Integer, index=True)
+    description = db.Column(db.String, index=True)
+    category = db.Column(db.String, index=True)
+    userId = db.Column(db.Integer, db.ForeignKey('user.id'))
     
     def __repr__(self):
-        return f'Post("{self.title}", "{self.date_posted}")'
+        return f'Expense("{self.userId}", "{self.amount}", "{self.category}")'
     
 
-posts = [
+expenses = [
     {
-        "author": "George Fleming",
-        "title": "Blog post 1",
-        "content": "First post content",
-        "date_posted": "March 17, 2023"
+        "id": 1,
+        "amount": 25.50,
+        "description": "Parking costs",
+        "category": "Travel",
+        "userId": 123
     },
     {
-        "author": "Brian Cumming",
-        "title": "Blog post 2",
-        "content": "Second post content",
-        "date_posted": "March 18, 2023"
+        "id": 2,
+        "amount": 5.20,
+        "description": "Lunch",
+        "category": "Food",
+        "userId": 123
     }
 ]
 
@@ -56,24 +56,24 @@ posts = [
 @app.route("/home")
 #function returns the message we want to display in the user’s browser. 
 def home():
-    return render_template("home.html", posts=posts)
+    return render_template("home.html", expenses=expenses)
 
 @app.route("/about")
 def about():
     return render_template("about.html", title="About")
 
 
-@app.route("/register", methods=["GET", "POST"])
-def register():
+@app.route("/add", methods=["GET", "POST"])
+def add_expense():
     form = RegistrationForm()
     if form.validate_on_submit():
-        user = User(username=form.username.data,
-        email=form.email.data, password=form.password.data)
-        db.session.add(user)
+        expense = Expense(amount=form.amount.data,
+        description=form.description.data, category=form.category.data)
+        db.session.add(expense)
         db.session.commit()
-        flash(f"Account created for {form.username.data}!", "success")
+        flash(f"Expense added", "success")
         return redirect(url_for("home"))
-    return render_template("register.html", title="Register", form=form)
+    return render_template("add_expense.html", title="Add Expense", form=form)
 
 
 @app.route("/login", methods=["GET", "POST"])
