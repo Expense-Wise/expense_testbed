@@ -5,7 +5,7 @@
         <div class="media-body">
             <div class="article-metadata">
             <a class="mr-2" href="#">{{ expense.id }}</a>
-            <small class="text-muted">{{ expense.amount }}</small>
+            <small class="text-muted1">{{ '{:.2f}'.format(expense.amount) }} GBP</small>
             </div>
             <h2><a class="article-title" href="#">{{ expense.description }}</a></h2>
             <p class="article-content">{{ expense.category }}</p>
