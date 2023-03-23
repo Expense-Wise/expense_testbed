@@ -58,9 +58,17 @@ expenses = [
 def home():
     return render_template("home.html", expenses=expenses)
 
-@app.route("/about")
-def about():
-    return render_template("about.html", title="About")
+@app.route("/update")
+def update():
+    form = RegistrationForm()
+    if form.validate_on_submit():
+        expense = Expense(amount=form.amount.data,
+        description=form.description.data, category=form.category.data)
+        db.session.update(expense)
+        db.session.commit()
+        flash(f"Expense updated", "success")
+        return redirect(url_for("home"))
+    return render_template("update.html", title="Update", form=form)
 
 
 @app.route("/add", methods=["GET", "POST"])

@@ -4,7 +4,7 @@
         <form method="POST" action="">
             {{ form.hidden_tag() }}
             <fieldset class="form-group">
-                <legend class="border-bottom mb-4">Add Expense</legend>
+                <legend class="border-bottom mb-4">Update Expense</legend>
                 <div class="form=group">
                     {{ form.amount.label(class="form-control-label", text="Amount") }}
                     {{ form.amount(class="form-control form-control-lg") }}
@@ -34,8 +34,10 @@
     </div>
     <div class="border-top pt-3">
         <small class="text-muted">
-            Need to update an expense? <a class="ml-2" href="{{ url_for("update") }}">
+            Need to add an expense? <a class="ml-2" href="{{ url_for("add_expense") }}">
                 Click here</a>
         </small>
     </div>
 {% endblock content %}
+
+
