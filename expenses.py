@@ -1,19 +1,27 @@
 # imports 
-from datetime import datetime
 from flask import Flask, render_template, url_for, flash, redirect
+from flask_login import LoginManager, UserMixin, current_user, login_user, logout_user, login_required
 from flask_sqlalchemy import SQLAlchemy
-from forms import RegistrationForm, LoginForm
+from forms import RegistrationForm, LoginForm, UpdateForm
 
 #creates instance of this Class. 
 # The first argument is the name of the application’s module or package.
 # __name__ is a convenient shortcut for this that is appropriate for most cases. 
 # This is needed so that Flask knows where to look for resources such as templates and static files.
 app = Flask(__name__)
+login_manager = LoginManager()
+login_manager.init_app(app)
 app.config["SECRET_KEY"] = "c4f86fdd81408bf0607e35b661f845a8"
 app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///site.db"
 db = SQLAlchemy(app)
 
-class User(db.Model):
+
+@login_manager.user_loader
+def load_user(user_id):
+    return User.query.get(int(user_id))
+
+
+class User(db.Model, UserMixin):
     id = db.Column(db.Integer, index=True, primary_key=True)
     username = db.Column(db.String(20), unique=True, nullable=False)
     email = db.Column(db.String(120), index=True, unique=True, nullable=False)
@@ -24,14 +32,22 @@ class User(db.Model):
     
 
 class Expense(db.Model):
-    id = db.Column(db.Integer, index=True, primary_key=True)
-    amount = db.Column(db.Integer, index=True)
-    description = db.Column(db.String, index=True)
-    category = db.Column(db.String, index=True)
-    userId = db.Column(db.Integer, db.ForeignKey('user.id'))
+    id = db.Column(db.Integer, primary_key=True)
+    amount = db.Column(db.Float, nullable=False)
+    description = db.Column(db.String(120), nullable=False)
+    category = db.Column(db.String(60), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    _max_id = 0
+    
+    def __init__(self, amount, description, category, user_id):
+        self.amount = amount
+        self.description = description
+        self.category = category
+        self.user_id = user_id
+        
     
     def __repr__(self):
-        return f'Expense("{self.userId}", "{self.amount}", "{self.category}")'
+        return f'Expense("{self.id}", "{self.amount}", "{self.category}"), {self.user_id}'
     
 
 expenses = [
@@ -58,13 +74,15 @@ expenses = [
 def home():
     return render_template("home.html", expenses=expenses)
 
-@app.route("/update")
+
+@app.route("/update", methods=["GET", "PUT", "DELETE", "POST"])
 def update():
-    form = RegistrationForm()
+    form = UpdateForm()
     if form.validate_on_submit():
-        expense = Expense(amount=form.amount.data,
-        description=form.description.data, category=form.category.data)
-        db.session.update(expense)
+        expense = Expense.query.get(form.id.data)
+        expense.amount = form.amount.data
+        expense.description = form.description.data
+        expense.category = form.category.data
         db.session.commit()
         flash(f"Expense updated", "success")
         return redirect(url_for("home"))
@@ -75,8 +93,9 @@ def update():
 def add_expense():
     form = RegistrationForm()
     if form.validate_on_submit():
-        expense = Expense(amount=form.amount.data,
-        description=form.description.data, category=form.category.data)
+        user_id = current_user.id
+        expense = Expense(amount=form.amount.data, description=form.description.data, 
+                          category=form.category.data, user_id=user_id)
         db.session.add(expense)
         db.session.commit()
         flash(f"Expense added", "success")
